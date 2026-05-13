@@ -310,6 +310,7 @@ python scripts/db.py insert-row protagonist-skills --data '{"技能名称":"火�
 **创建命令：**
 ```bash
 python scripts/db.py create-table equipment --headers "装备名,部位,属性加成,耐久度,归属,描述"
+```
 
 **列说明：**
 

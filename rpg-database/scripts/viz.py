@@ -53,6 +53,17 @@ STATUS_COLORS = {
     '否': '#6b7280',
     '主动': '#8b5cf6',
     '被动': '#3b82f6',
+    '在线': '#10b981',
+    '离线': '#6b7280',
+    '活着': '#10b981',
+    '死亡': '#ef4444',
+}
+
+TABLE_ICONS = {
+    'global-state': '🌍', 'protagonist-info': '👤', 'character-stats': '📊',
+    'inventory': '🎒', 'quests': '📋', 'npc-relations': '🤝',
+    'protagonist-skills': '⚡', 'skills': '⚡', 'equipment': '🛡️',
+    'memo': '📝', 'factions': '🏰', 'locations': '📍', 'chronicle': '📜',
 }
 
 
@@ -78,6 +89,7 @@ def get_all_tables(db_name):
             ordered.append({
                 'name': tname,
                 'displayName': TABLE_DISPLAY_NAMES.get(tname, tname),
+                'icon': TABLE_ICONS.get(tname, '📋'),
                 'headers': tables[tname].get('headers', []),
                 'rows': tables[tname].get('rows', []),
                 'notes': tables[tname].get('notes', ''),
@@ -87,11 +99,14 @@ def get_all_tables(db_name):
 
 def build_html(tables, db_name):
     """构建自包含 HTML"""
-    # Use __PLACEHOLDER__ markers to avoid f-string vs JS template literal conflict
     safe_db_name = html_mod.escape(db_name)
     tables_json = json.dumps(tables, ensure_ascii=False)
     status_colors_json = json.dumps(STATUS_COLORS, ensure_ascii=False)
     table_count = len(tables)
+
+    # 统计非空表数、总行数
+    total_rows = sum(len(t['rows']) for t in tables)
+    non_empty = sum(1 for t in tables if len(t['rows']) > 0)
 
     template = '''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -136,6 +151,20 @@ body {
 }
 .header h1 { font-size: 20px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .header .sub { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+.header .sub .highlight { color: var(--accent); font-weight: 600; }
+/* ── 顶部统计条 ── */
+.top-stats {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 12px;
+}
+.top-stat {
+  background: var(--bg-card); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius); padding: 10px 18px; text-align: center;
+  min-width: 80px;
+}
+.top-stat .num { font-size: 22px; font-weight: 700; color: var(--accent); }
+.top-stat .label { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+/* ── Tab 导航 ── */
 .tabs {
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 12px 0; justify-content: center;
@@ -148,11 +177,48 @@ body {
 }
 .tab:hover { background: var(--btn-hover); color: var(--text); }
 .tab.active { background: var(--btn-active); color: #fff; border-color: var(--accent); }
+.tab.dashboard-tab {
+  border-color: rgba(168,85,247,0.4);
+  background: rgba(168,85,247,0.1);
+}
+.tab.dashboard-tab.active {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  border-color: #a855f7;
+}
 .tab .badge {
   display: inline-block; background: rgba(255,255,255,0.2);
   padding: 1px 7px; border-radius: 10px; font-size: 10px;
   margin-left: 4px;
 }
+/* ── 仪表盘 ── */
+.dashboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.dash-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+.dash-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(56,189,248,0.18); }
+.dash-card.empty { opacity: 0.4; cursor: default; }
+.dash-card.empty:hover { border-color: rgba(255,255,255,0.06); transform: none; box-shadow: var(--shadow); }
+.dash-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.dash-card-header .icon { font-size: 20px; }
+.dash-card-header .title { font-size: 14px; font-weight: 600; color: var(--text); }
+.dash-card-header .count { margin-left: auto; font-size: 11px; color: var(--text-sub); }
+.dash-card-header .count strong { color: var(--accent); font-size: 16px; }
+.dash-preview { font-size: 11px; color: var(--text-sub); line-height: 1.6; }
+.dash-preview .row-preview {
+  padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.03);
+  margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dash-preview .row-preview .kv { color: var(--text); }
+.dash-preview .more { text-align: center; color: var(--accent); font-size: 10px; margin-top: 4px; }
+.dash-empty { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-sub); }
+.dash-empty .icon { font-size: 48px; opacity: 0.3; margin-bottom: 8px; }
+/* ── 面板 ── */
 .panel { display: none; }
 .panel.active { display: block; }
 .card {
@@ -217,13 +283,12 @@ tr:hover td { background: var(--table-hover); }
   padding: 4px 10px; border-radius: 14px; font-size: 11px;
   background: var(--badge); color: var(--text-sub);
 }
-.controls {
-  display: flex; gap: 10px; align-items: center;
-  justify-content: space-between; flex-wrap: wrap;
-  margin-bottom: 8px;
-}
 @media (max-width: 640px) {
   body { padding: 8px; }
+  .top-stats { gap: 6px; }
+  .top-stat { padding: 8px 12px; min-width: 60px; }
+  .top-stat .num { font-size: 18px; }
+  .dashboard { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
   .tab { font-size: 11px; padding: 5px 10px; }
   .card { padding: 10px; }
   th, td { padding: 6px 8px; font-size: 11px; }
@@ -233,38 +298,112 @@ tr:hover td { background: var(--table-hover); }
 <body>
 <div class="header">
   <h1>🎮 游戏数据库</h1>
-  <div class="sub">数据库：__DB_NAME__ | 共 __TABLE_COUNT__ 个表</div>
+  <div class="sub">数据库：<span class="highlight">__DB_NAME__</span></div>
+</div>
+<div class="top-stats">
+  <div class="top-stat"><div class="num">__NONEMPTY__</div><div class="label">活跃表</div></div>
+  <div class="top-stat"><div class="num">__TOTALROWS__</div><div class="label">总行数</div></div>
+  <div class="top-stat"><div class="num">__TABLE_COUNT__</div><div class="label">全部表</div></div>
 </div>
 <div class="tabs" id="tabs"></div>
 <div id="panels"></div>
 
 <script>
-const TABLES = __TABLES_JSON__;
-const PER_PAGE = 15;
-let activeTab = null;
+var TABLES = __TABLES_JSON__;
+var PER_PAGE = 15;
+var activeTab = '__DASHBOARD__';
 
 function getBadgeColor(val) {
-  const map = __STATUS_COLORS__;
+  var map = __STATUS_COLORS__;
   return map[val] || null;
 }
 
 function esc(name) { return name.replace(/'/g, "\\\\'"); }
 
 function renderTabs() {
-  const container = document.getElementById('tabs');
-  const nonEmpty = TABLES.filter(function(t) { return t.rows.length > 0; });
-  if (nonEmpty.length === 0) {
-    container.innerHTML = TABLES.map(function(t,i) {
-      return '<div class="tab ' + (i===0?'active':'') + '" data-tab="' + t.name + '" onclick="showTab(\\'' + esc(t.name) + '\\')">' + t.displayName + '<span class="badge">' + t.rows.length + '</span></div>';
-    }).join('');
-    if (TABLES[0]) showTab(TABLES[0].name);
-    return;
-  }
-  container.innerHTML = TABLES.map(function(t,i) {
+  var container = document.getElementById('tabs');
+  var nonEmpty = TABLES.filter(function(t) { return t.rows.length > 0; });
+  var totalNonEmpty = nonEmpty.length;
+
+  // Dashboard tab
+  var dashActive = activeTab === '__DASHBOARD__';
+  var html = '<div class="tab dashboard-tab' + (dashActive ? ' active' : '') + '" data-tab="__DASHBOARD__" onclick="showDashboard()">🏠 仪表盘<span class="badge">' + totalNonEmpty + '</span></div>';
+
+  TABLES.forEach(function(t, i) {
     var emptyCls = t.rows.length === 0 ? ' style="opacity:0.5"' : '';
-    var activeCls = (activeTab === t.name || (!activeTab && i === 0 && t.rows.length > 0));
-    return '<div class="tab' + (activeCls?' active':'') + '" data-tab="' + t.name + '"' + emptyCls + ' onclick="showTab(\\'' + esc(t.name) + '\\')">' + t.displayName + '<span class="badge">' + t.rows.length + '</span></div>';
-  }).join('');
+    var activeCls = activeTab === t.name;
+    html += '<div class="tab' + (activeCls ? ' active' : '') + '" data-tab="' + t.name + '"' + emptyCls + ' onclick="showTab(\\'' + esc(t.name) + '\\')">' + t.displayName + '<span class="badge">' + t.rows.length + '</span></div>';
+  });
+
+  container.innerHTML = html;
+
+  // Default to dashboard if no other active tab
+  if (activeTab === '__DASHBOARD__') {
+    showDashboard();
+  }
+}
+
+function showDashboard() {
+  activeTab = '__DASHBOARD__';
+  document.querySelectorAll('.tab').forEach(function(el) {
+    el.classList.toggle('active', el.getAttribute('data-tab') === '__DASHBOARD__');
+  });
+
+  var panels = document.getElementById('panels');
+  var nonEmpty = TABLES.filter(function(t) { return t.rows.length > 0; });
+
+  var html = '<div class="dashboard">';
+
+  if (nonEmpty.length === 0) {
+    html += '<div class="dash-empty"><div class="icon">📭</div><p>所有表暂无数据</p><p style="font-size:11px;margin-top:4px;">开始跑团后，数据将在此处汇总展示</p></div>';
+  } else {
+    nonEmpty.forEach(function(t) {
+      html += '<div class="dash-card" onclick="showTab(\\'' + esc(t.name) + '\\')">';
+      html += '<div class="dash-card-header">';
+      html += '<span class="icon">' + (t.icon || '📋') + '</span>';
+      html += '<span class="title">' + t.displayName + '</span>';
+      html += '<span class="count"><strong>' + t.rows.length + '</strong> 行</span>';
+      html += '</div>';
+      html += '<div class="dash-preview">';
+
+      // Show first 3 rows as preview
+      var previewCount = Math.min(3, t.rows.length);
+      for (var i = 0; i < previewCount; i++) {
+        var rowPreview = '';
+        // Pick first 2-3 meaningful columns
+        var colsToShow = Math.min(3, t.headers.length);
+        for (var j = 0; j < colsToShow; j++) {
+          var val = t.rows[i][j] || '';
+          if (val) {
+            if (j > 0) rowPreview += ' · ';
+            rowPreview += '<span class="kv">' + val + '</span>';
+          }
+        }
+        html += '<div class="row-preview">' + rowPreview + '</div>';
+      }
+
+      if (t.rows.length > 3) {
+        html += '<div class="more">还有 ' + (t.rows.length - 3) + ' 行... 点击查看 →</div>';
+      }
+      html += '</div></div>';
+    });
+
+    // Also show empty tables dimmed
+    var empties = TABLES.filter(function(t) { return t.rows.length === 0; });
+    empties.forEach(function(t) {
+      html += '<div class="dash-card empty">';
+      html += '<div class="dash-card-header">';
+      html += '<span class="icon">' + (t.icon || '📋') + '</span>';
+      html += '<span class="title">' + t.displayName + '</span>';
+      html += '<span class="count">空</span>';
+      html += '</div>';
+      html += '<div class="dash-preview" style="text-align:center;padding:8px;">暂无数据</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+  panels.innerHTML = html;
 }
 
 function showTab(name) {
@@ -401,6 +540,9 @@ renderTabs();
     html = html.replace('__TABLE_COUNT__', str(table_count))
     html = html.replace('__TABLES_JSON__', tables_json)
     html = html.replace('__STATUS_COLORS__', status_colors_json)
+    html = html.replace('__NONEMPTY__', str(non_empty))
+    html = html.replace('__TOTALROWS__', str(total_rows))
+    html = html.replace('__DASHBOARD__', '__DASHBOARD__')
     return html
 
 

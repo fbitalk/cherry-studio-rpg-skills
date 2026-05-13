@@ -42,7 +42,7 @@ def get_wb_path(name: str) -> Path:
 
 # ─── 世界书 I/O ─────────────────────────────────────────────
 
-CATEGORIES = ["地点", "人物", "组织", "历史", "魔法", "种族", "物品", "其他"]
+CATEGORIES = ["地点", "人物", "组织", "历史", "魔法", "种族", "物品", "地理", "力量体系", "文化", "知识", "其他"]
 
 
 def load_wb(name: str) -> dict:
@@ -84,7 +84,7 @@ def match_score(query: str, keyword: str) -> int:
 
 
 def search_entries(wb: dict, query: str) -> list:
-    """搜索世界书，返回匹配条目列表（按 score+order 排序）。"""
+    """搜索世界书，返回匹配条目列表（按 score+order 排序），每项含 key, entry, score。"""
     results = []
     for key, entry in wb.get("entries", {}).items():
         if not entry.get("enabled", True):
@@ -98,7 +98,7 @@ def search_entries(wb: dict, query: str) -> list:
             results.append((best, entry.get("order", 10), key, entry))
     # 按分数降序、order 降序、key 升序
     results.sort(key=lambda x: (-x[0], -x[1], x[2]))
-    return [r[3] for r in results]
+    return [{"key": r[2], "entry": r[3], "score": r[0]} for r in results]
 
 
 # ─── 格式化输出 ─────────────────────────────────────────────
@@ -139,12 +139,15 @@ def cmd_list_wbs(args):
         return
     for f in files:
         try:
-            wb = json.loads(f.read_text(encoding="utf-8"))
-            name = wb["meta"]["name"]
-            count = len(wb.get("entries", {}))
+            data = json.loads(f.read_text(encoding="utf-8"))
+            # 类型校验：必须有 entries 键才是世界书
+            if "entries" not in data:
+                continue
+            name = data["meta"]["name"]
+            count = len(data.get("entries", {}))
             print(f"  {name}  ({count} 个条目)")
         except Exception:
-            print(f"  {f.stem}  (数据已损坏)")
+            pass  # 跳过无法解析或格式不符的文件
 
 
 def cmd_create_entry(args):
@@ -245,13 +248,16 @@ def cmd_search(args):
 
     print(f'搜索 "{args.query}" 找到 {len(results)} 个结果:')
     print()
-    for entry in results:
-        # 找到 entry 的 key
-        for k, v in wb["entries"].items():
-            if v is entry:
-                print(format_entry(k, entry))
-                print()
-                break
+    for r in results:
+        key = r["key"]
+        entry = r["entry"]
+        score = r["score"]
+        score_label = {3: "精确", 2: "前缀", 1: "部分"}.get(score, "")
+        print(f'  [{key}] {entry["title"]}  (匹配: {score_label})')
+        print(f'    分类: {entry.get("category", "未分类")}  |  优先级: {entry.get("order", 10)}')
+        print(f'    关键词: {entry.get("keywords", "")}')
+        print(f'    内容: {entry.get("content", "")}')
+        print()
 
 
 def cmd_toggle_entry(args):

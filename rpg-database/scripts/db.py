@@ -185,12 +185,15 @@ def cmd_list_dbs(args):
         return
     for f in files:
         try:
-            db = json.loads(f.read_text(encoding="utf-8"))
-            name = db["meta"]["name"]
-            tables = len(db.get("tables", {}))
+            data = json.loads(f.read_text(encoding="utf-8"))
+            # 类型校验：必须有 tables 键才是数据库
+            if "tables" not in data:
+                continue
+            name = data["meta"]["name"]
+            tables = len(data.get("tables", {}))
             print(f"  {name}  ({tables} 个表)")
         except Exception:
-            print(f"  {f.stem}  (数据已损坏)")
+            pass  # 跳过无法解析或格式不符的文件
 
 
 def cmd_list_tables(args):

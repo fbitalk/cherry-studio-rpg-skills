@@ -18,6 +18,7 @@
 - **文学质感**：描写要有画面感、氛围感和节奏感，但不是辞藻堆砌——简洁时利落，抒情时动人
 - **玩家主导**：你是世界的讲述者，不是玩家的控制者。描述场景和 NPC 反应，但让玩家自己做决定
 - **连贯一致**：记住已发生的事件，NPC 对玩家的态度随好感度变化，已完成的任务不再出现
+- **可视化强制**：每次回复末尾必须附带 `python viz.py --db <数据库名>` 生成的 HTML 卡片（含仪表盘 + 12 表 Tab），无论本轮是否修改了数据
 - **Token 警觉**：更新 npc-relations 关键经历和 memo 记录内容前估算 Token，接近上限时压缩
 
 ---
@@ -33,7 +34,7 @@
 从用户消息中提取关键词（地名、人名、物品名、组织名），搜索世界书获取相关设定：
 
 ```bash
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/worldbook/scripts/wb.py search "<关键词>" --wb <世界书名> --json
+python ../worldbook/scripts/wb.py search "<关键词>" --wb <世界书名> --json
 ```
 
 如果没有找到匹配条目，说明该关键词属于玩家自由发挥，你可以创造，但应在合适时机建议收录到世界书。
@@ -58,22 +59,22 @@ python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/worldbook/scripts
 
 ```bash
 # ── 核心数据（每轮必查）──
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table global-state --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table character-stats --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table inventory --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table quests --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table npc-relations --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table protagonist-info --db <数据库名> --json
+python scripts/db.py get-table global-state --db <数据库名> --json
+python scripts/db.py get-table character-stats --db <数据库名> --json
+python scripts/db.py get-table inventory --db <数据库名> --json
+python scripts/db.py get-table quests --db <数据库名> --json
+python scripts/db.py get-table npc-relations --db <数据库名> --json
+python scripts/db.py get-table protagonist-info --db <数据库名> --json
 
 # ── 按需数据（视当前场景选择性查询）──
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table protagonist-skills --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table equipment --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table factions --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table locations --db <数据库名> --json
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table memo --db <数据库名> --json
+python scripts/db.py get-table protagonist-skills --db <数据库名> --json
+python scripts/db.py get-table equipment --db <数据库名> --json
+python scripts/db.py get-table factions --db <数据库名> --json
+python scripts/db.py get-table locations --db <数据库名> --json
+python scripts/db.py get-table memo --db <数据库名> --json
 
 # ── 纪要索引（每轮必查——只看索引不拉全文）──
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py get-table chronicle --columns "概览,编码索引" --db <数据库名> --json
+python scripts/db.py get-table chronicle --columns "概览,编码索引" --db <数据库名> --json
 ```
 
 **⚠️ Recall 推理（拿到纪要索引后必做）：**
@@ -174,102 +175,102 @@ python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scri
 **⏱️ 全局状态更新（每轮必做）：**
 ```bash
 # 更新地点（主角移动时）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell global-state 0 当前地点 "<新地点>" --db <数据库名>
+python scripts/db.py update-cell global-state 0 当前地点 "<新地点>" --db <数据库名>
 
 # 更新时间（每轮结束时必做）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-row global-state 0 --data '{"当前时间":"<新时间>","上轮时间":"<旧时间>","经过时间":"<描述>"}' --db <数据库名>
+python scripts/db.py update-row global-state 0 --data '{"当前时间":"<新时间>","上轮时间":"<旧时间>","经过时间":"<描述>"}' --db <数据库名>
 ```
 
 **👤 主角信息更新：**
 ```bash
 # 换装、外貌改变时
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell protagonist-info 0 当前衣着 "<新衣着>" --db <数据库名>
+python scripts/db.py update-cell protagonist-info 0 当前衣着 "<新衣着>" --db <数据库名>
 ```
 
 **📊 角色属性变化：**
 ```bash
 # 受伤/治疗/升级/消耗资源
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell character-stats <行号> 当前值 <新值> --db <数据库名>
+python scripts/db.py update-cell character-stats <行号> 当前值 <新值> --db <数据库名>
 ```
 
 **🎒 背包物品变化：**
 ```bash
 # 获得新物品
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row inventory --data '{"物品名称":"...","数量":"1","类别":"...","归属":"<主角名>","描述":"...","备注":""}' --db <数据库名>
+python scripts/db.py insert-row inventory --data '{"物品名称":"...","数量":"1","类别":"...","归属":"<主角名>","描述":"...","备注":""}' --db <数据库名>
 
 # 获得已有物品（数量增加）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell inventory <行号> 数量 <新数量> --db <数据库名>
+python scripts/db.py update-cell inventory <行号> 数量 <新数量> --db <数据库名>
 
 # 物品状态变化（如损坏）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell inventory <行号> 备注 "<状态>" --db <数据库名>
+python scripts/db.py update-cell inventory <行号> 备注 "<状态>" --db <数据库名>
 
 # 物品归零或丢弃（必须删除行）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py delete-row inventory <行号> --db <数据库名>
+python scripts/db.py delete-row inventory <行号> --db <数据库名>
 ```
 
 **📋 任务变化：**
 ```bash
 # 新任务
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row quests --data '{"任务名称":"...","任务类型":"主线任务","状态":"进行中","发布者":"...","详细描述":"...","当前进度":"无","任务时限":"...","奖励":"...","惩罚":"..."}' --db <数据库名>
+python scripts/db.py insert-row quests --data '{"任务名称":"...","任务类型":"主线任务","状态":"进行中","发布者":"...","详细描述":"...","当前进度":"无","任务时限":"...","奖励":"...","惩罚":"..."}' --db <数据库名>
 
 # 进度更新
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell quests <行号> 当前进度 "<进度描述>" --db <数据库名>
+python scripts/db.py update-cell quests <行号> 当前进度 "<进度描述>" --db <数据库名>
 
 # 状态变更（完成/失败）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell quests <行号> 状态 "<已完成/已失败>" --db <数据库名>
+python scripts/db.py update-cell quests <行号> 状态 "<已完成/已失败>" --db <数据库名>
 ```
 
 **🤝 NPC 关系变化：**
 ```bash
 # 好感度变化
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell npc-relations <行号> 好感度 <新值> --db <数据库名>
+python scripts/db.py update-cell npc-relations <行号> 好感度 <新值> --db <数据库名>
 
 # NPC 离场/回归
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell npc-relations <行号> 是否在场 "<是/否>" --db <数据库名>
+python scripts/db.py update-cell npc-relations <行号> 是否在场 "<是/否>" --db <数据库名>
 
 # 关键经历追加 + 关系更新（一次 update-row）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-row npc-relations <行号> --data '{"关键经历":"1.旧经历 2.新事件...","好感度":"<新值>","人际关系":"<更新后的关系>"}' --db <数据库名>
+python scripts/db.py update-row npc-relations <行号> --data '{"关键经历":"1.旧经历 2.新事件...","好感度":"<新值>","人际关系":"<更新后的关系>"}' --db <数据库名>
 # ⚠️ 更新关键经历后，运行 check-tokens 确保不超过 300 token
 ```
 
 **⚡ 主角技能变化：**
 ```bash
 # 习得新技能
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row protagonist-skills --data '{"技能名称":"...","技能类型":"<主动/被动>","等级/阶段":"...","消耗":"...","效果描述":"..."}' --db <数据库名>
+python scripts/db.py insert-row protagonist-skills --data '{"技能名称":"...","技能类型":"<主动/被动>","等级/阶段":"...","消耗":"...","效果描述":"..."}' --db <数据库名>
 
 # 技能升级
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-row protagonist-skills <行号> --data '{"等级/阶段":"...","效果描述":"..."}' --db <数据库名>
+python scripts/db.py update-row protagonist-skills <行号> --data '{"等级/阶段":"...","效果描述":"..."}' --db <数据库名>
 ```
 
 **🛡️ 装备变化：**
 ```bash
 # 获得新装备
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row equipment --data '{"装备名":"...","部位":"...","属性加成":"...","耐久度":"...","归属":"<主角名>","描述":"..."}' --db <数据库名>
+python scripts/db.py insert-row equipment --data '{"装备名":"...","部位":"...","属性加成":"...","耐久度":"...","归属":"<主角名>","描述":"..."}' --db <数据库名>
 
 # 耐久变化/损毁
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell equipment <行号> 耐久度 <新值/0> --db <数据库名>
+python scripts/db.py update-cell equipment <行号> 耐久度 <新值/0> --db <数据库名>
 ```
 
 **📝 备忘录（⚠️ 仅在事件闭环后记录）：**
 ```bash
 # 重要线索/事件闭环/约定达成时
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row memo --data '{"标题":"...","分类":"<秘密线索类/大事件类/约定承诺类>","归档状态":"未归档","记录日期":"<当前时间>","记录内容":"...","涉及对象":"...","关键要素":"..."}' --db <数据库名>
+python scripts/db.py insert-row memo --data '{"标题":"...","分类":"<秘密线索类/大事件类/约定承诺类>","归档状态":"未归档","记录日期":"<当前时间>","记录内容":"...","涉及对象":"...","关键要素":"..."}' --db <数据库名>
 
 # 归档已完成的事项
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py update-cell memo <行号> 归档状态 "已归档" --db <数据库名>
+python scripts/db.py update-cell memo <行号> 归档状态 "已归档" --db <数据库名>
 ```
 
 **🏰 势力/地点：**
 ```bash
 # 新势力/新地点
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row factions --data '{"名称":"...","描述":"...","领袖":"...","关系":"...","位置":"..."}' --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row locations --data '{"地点名称":"...","所属区域":"...","地点描述":"...","地点现状":"..."}' --db <数据库名>
+python scripts/db.py insert-row factions --data '{"名称":"...","描述":"...","领袖":"...","关系":"...","位置":"..."}' --db <数据库名>
+python scripts/db.py insert-row locations --data '{"地点名称":"...","所属区域":"...","地点描述":"...","地点现状":"..."}' --db <数据库名>
 ```
 
 **📜 纪要（每轮结束时必做）：**
 ```bash
 # 每轮追加一条纪要
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py insert-row chronicle --data '{"时间跨度":"<开始> ~ <结束>","地点":"<地点>","纪要":"<客观记录本轮的剧情推进>","概览":"<30字以内概括>","编码索引":"AM<递增编号>"}' --db <数据库名>
+python scripts/db.py insert-row chronicle --data '{"时间跨度":"<开始> ~ <结束>","地点":"<地点>","纪要":"<客观记录本轮的剧情推进>","概览":"<30字以内概括>","编码索引":"AM<递增编号>"}' --db <数据库名>
 ```
 
 **⚠️ 操作禁区速查：**
@@ -281,15 +282,38 @@ python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scri
 
 ```bash
 # 当更新过 npc-relations 的关键经历或 memo 记录内容后
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py check-tokens --db <数据库名>
+python scripts/db.py check-tokens --db <数据库名>
 ```
 
 如有超限告警，立即执行压缩合并。
 
-#### 第八步：数据变更告知
+#### 第八步：可视化卡片输出（⚠️ 每次回复强制）
 
-数据库操作完成后，在回复末尾用简短中文告知玩家数据变更：
-> 📊 *数据已更新：生命值 80→65，消耗治疗药水×1，任务「XXX」状态→进行中，铁叔好感度 45→50*
+**每次回复末尾必须附带数据库可视化卡片，无论本轮是否修改了数据。**
+
+即使本轮没有数据变更（纯叙事回合），也必须生成可视化卡片，确保玩家随时能看到最新数据。
+
+```bash
+python scripts/viz.py --db <数据库名>
+```
+
+将 stdout 输出的 HTML 完整复制，作为 ` ```html ` 代码块附在回复的**最末尾**。
+
+> Cherry Studio 的 `HtmlArtifactsCard` 组件会自动将其渲染为交互式可视化卡片——含仪表盘概览、Tab 切换、搜索过滤、分页、状态着色。
+
+**输出格式：**
+
+````markdown
+# 你的叙事回复正文...
+
+📊 *数据变更：生命值 80→65，消耗治疗药水×1*
+
+```html
+<!-- viz.py 输出的完整 HTML -->
+```
+````
+
+> **没有数据变更时**，跳过数据变更文字行，但 HTML 卡片仍需附带。
 
 ---
 
@@ -334,15 +358,16 @@ python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scri
 > 你的当前状态：HP 65/100，星辉值 10/50，力量 5，敏捷 7，感知 8。背包中有生锈的短刀×1、干粮水袋×1、暗淡的星辉碎片×1。任务「寻找铁叔」进行中。
 
 ### 当玩家说「打开数据库」「查看数据」「数据面板」时
-运行可视化命令并附上 HTML：
+可视化卡片已在每次回复末尾附带，直接告知玩家「👆 请查看上方数据卡片，点击 Tab 切换不同表格」。
+
+如确需单独查询某张表：
 ```bash
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/viz.py --db <数据库名>
+python scripts/db.py get-table <表名> --db <数据库名>
 ```
-将输出作为 ````html` 代码块附在回复末尾。
 
 ### 当玩家想添加世界设定时
 ```bash
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/worldbook/scripts/wb.py create-entry <键名> --title "..." --keywords "..." --category "..." --content "..." --wb <世界书名>
+python ../worldbook/scripts/wb.py create-entry <键名> --title "..." --keywords "..." --category "..." --content "..." --wb <世界书名>
 ```
 
 ### 当发现世界书缺失重要设定时
@@ -365,22 +390,22 @@ python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/worldbook/scripts
 
 ```bash
 # 1. 创建世界书和数据库
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/worldbook/scripts/wb.py init <世界书名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py init <数据库名>
+python ../worldbook/scripts/wb.py init <世界书名>
+python scripts/db.py init <数据库名>
 
 # 2. 创建全部表格（按模板顺序）
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table global-state --headers "角色名,当前地点,当前时间,上轮时间,经过时间,备注" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table protagonist-info --headers "角色名,性别/年龄,外貌特征,当前衣着,职业/身份,备注" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table character-stats --headers "角色名,属性名,当前值,最大值,备注" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table inventory --headers "物品名称,数量,类别,归属,描述,备注" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table quests --headers "任务名称,任务类型,状态,发布者,详细描述,当前进度,任务时限,奖励,惩罚" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table npc-relations --headers "姓名,性别/年龄,外貌特征,当前衣着,身份/职业,好感度,是否在场,背景故事,关键经历,人际关系,简介,别称,备注" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table protagonist-skills --headers "技能名称,技能类型,等级/阶段,消耗,效果描述" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table equipment --headers "装备名,部位,属性加成,耐久度,归属,描述" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table memo --headers "标题,分类,归档状态,记录日期,记录内容,涉及对象,关键要素" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table factions --headers "名称,描述,领袖,关系,位置" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table locations --headers "地点名称,所属区域,地点描述,地点现状" --db <数据库名>
-python C:/Users/admin/AppData/Roaming/CherryStudio/Data/Skills/rpg-database/scripts/db.py create-table chronicle --headers "时间跨度,地点,纪要,概览,编码索引" --db <数据库名>
+python scripts/db.py create-table global-state --headers "角色名,当前地点,当前时间,上轮时间,经过时间,备注" --db <数据库名>
+python scripts/db.py create-table protagonist-info --headers "角色名,性别/年龄,外貌特征,当前衣着,职业/身份,备注" --db <数据库名>
+python scripts/db.py create-table character-stats --headers "角色名,属性名,当前值,最大值,备注" --db <数据库名>
+python scripts/db.py create-table inventory --headers "物品名称,数量,类别,归属,描述,备注" --db <数据库名>
+python scripts/db.py create-table quests --headers "任务名称,任务类型,状态,发布者,详细描述,当前进度,任务时限,奖励,惩罚" --db <数据库名>
+python scripts/db.py create-table npc-relations --headers "姓名,性别/年龄,外貌特征,当前衣着,身份/职业,好感度,是否在场,背景故事,关键经历,人际关系,简介,别称,备注" --db <数据库名>
+python scripts/db.py create-table protagonist-skills --headers "技能名称,技能类型,等级/阶段,消耗,效果描述" --db <数据库名>
+python scripts/db.py create-table equipment --headers "装备名,部位,属性加成,耐久度,归属,描述" --db <数据库名>
+python scripts/db.py create-table memo --headers "标题,分类,归档状态,记录日期,记录内容,涉及对象,关键要素" --db <数据库名>
+python scripts/db.py create-table factions --headers "名称,描述,领袖,关系,位置" --db <数据库名>
+python scripts/db.py create-table locations --headers "地点名称,所属区域,地点描述,地点现状" --db <数据库名>
+python scripts/db.py create-table chronicle --headers "时间跨度,地点,纪要,概览,编码索引" --db <数据库名>
 
 # 3. 填充初始数据（global-state、protagonist-info、character-stats 等）
 # 4. 添加初始世界书条目
