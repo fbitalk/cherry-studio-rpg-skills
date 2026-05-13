@@ -139,7 +139,7 @@ cherry-studio-rpg-skills/
 
 ## 配套提示词
 
-仓库中的 `小说之神-提示词.md` 是一个完整的智能体 System Prompt，可直接用于创建「小说之神」Agent，配合两个 Skill 实现沉浸式互动叙事。
+仓库中的 `游戏之神-提示词.md` 是一个完整的智能体 System Prompt，可直接用于创建「小说之神」Agent，配合两个 Skill 实现沉浸式互动叙事。
 
 ---
 
